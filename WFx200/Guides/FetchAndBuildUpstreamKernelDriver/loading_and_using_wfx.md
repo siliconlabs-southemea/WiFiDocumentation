@@ -168,7 +168,7 @@ driver type:    0 (driver type B)
 
 WFx200 has no firmware and is required to be flashed by the wfx driver upon startup
 
-By default the driver will look in `/lib/firmware/wfm_wf200.sec`
+By default the driver will look in `/lib/firmware/wfx/wfm_wf200.sec`
 
 To download the latest version start by cloning the wfx-firmare repo :
 
@@ -184,36 +184,57 @@ Once done copy the .sec file provided in the destination directory as super user
 cp wfm_wf200_C0.sec /lib/firmware/wfm_wf200.sec
 ```
 
+```
+wget https://github.com/SiliconLabs/wfx-firmware/raw/FW3.17.0/wfm_wf200_C0.sec
+```
+
 ### Generating and setting up the WFx200 PDS file
 
 WFx200 also needs a PDS (Platform Data Set) file to be fed to the chipset
 
-By default the driver will look in `/lib/firmware/wf200.pds`
+By default the driver will look in `/lib/firmware/wfx/wf200.pds`
 
-To download the latest version start by cloning the wfx-firmare repo :
+*** IMPORTANT ** When using mainsteam kernel, the PDS file format is different:
 
-```console 
-cd ~/wfx_driver
-git clone https://github.com/SiliconLabs/wfx-firmware.git
+Mainstream didn't allow Silicon Labs to publish with their initial format. Silicon Labs  had to change to a tlv format (type/length/value), which needs to be generated from a new version of pds_compress, one that supports the tlv format.
+
+Get the latest pds_compress script :
+
+`wget https://raw.githubusercontent.com/SiliconLabs/wfx-linux-tools/master/pds_compress`
+
+Add execute permissions to the script :
+
+`sudo chmod +x pds_compress`
+
+Get the PDS of your choice. I wil use the one dedicated to BRD8022 :
+
+`wget https://raw.githubusercontent.com/SiliconLabs/wfx-pds/API3.0/BRD8022A_Rev_A06.pds.in`
+
+Get the definitions.in that match your firmware version. In our case v3.17:
+
+`wget https://raw.githubusercontent.com/SiliconLabs/wfx-firmware/FW3.17.0/PDS/definitions.in`
+
+
+Modify the PDS file by commenting out 2 lines :
+
+```
+// FRONT_END_LOSS_CORRECTION_QDB
+// RSSI_CORRECTION
 ```
 
-Once done, you will also need the PDS compress Python script availablein the *wfx-linux-tools* repository :
+And run the script :
 
-```console 
-git clone https://github.com/SiliconLabs/wfx-linux-tools
-```
-
-cd into wfx-firmware : `cd wfx-firmware`
-
-There run `python3 ../wfx-linux-tools/pds_compress PDS/template.pds.in wf200.pds`
+`pds_compress -l PDS/template.pds.in wf200.pds`
 
 Once done copy the .pds file provided in the destination directory as super user:
 
 ```console 
-cp wf200.pds /lib/firmware/wf200.pds
+cp wf200.pds /lib/firmware/wfx/wf200.pds
 ```
 
 ### Reboot and start using the WFx200
+
+## Troubleshoot
 
 ### Debugging sdio detection on the Raspberry Pi hardware 
 
@@ -240,3 +261,61 @@ dtdebug=1
 
 And `vcdbg log msg`
 
+### Debugging .sec injection into wfx200
+
+```
+dmesg | grep wfx
+[    6.651443] wfx: loading out-of-tree module taints kernel.
+[    6.687967] wfx-sdio mmc2:0001:1: can't load wfx/wfm_wf200_C0.sec, falling back to wfx/wfm_wf200.sec
+[    6.688083] wfx-sdio mmc2:0001:1: Direct firmware load for wfx/wfm_wf200.sec failed with error -2
+[    6.688119] wfx-sdio mmc2:0001:1: can't load wfx/wfm_wf200.sec
+[    6.694957] wfx-sdio: probe of mmc2:0001:1 failed with error -2
+```
+
+
+```
+dmesg | grep wfx
+[    6.640329] wfx: loading out-of-tree module taints kernel.
+[    6.691847] wfx-sdio mmc2:0001:1: can't load wfx/wfm_wf200_C0.sec, falling back to wfx/wfm_wf200.sec
+```
+
+### Debugging .pds injection into wfx200
+
+
+```
+pi@raspberrypi:~ $ dmesg | grep wfx
+[    6.809445] wfx: loading out-of-tree module taints kernel.
+[    6.867018] wfx-sdio mmc2:0001:1: can't load wfx/wfm_wf200_C0.sec, falling back to wfx/wfm_wf200.sec
+[    7.085869] wfx-sdio mmc2:0001:1: started firmware 3.17.0 "WF200_ASIC_WFM_(Jenkins)_FW3.17.0" (API: 3.12, keyset: C0, caps: 0x00000002)
+[    7.086069] wfx-sdio mmc2:0001:1: Direct firmware load for wfx/wf200.pds failed with error -2
+[    7.086118] wfx-sdio mmc2:0001:1: can't load antenna parameters (PDS file wfx/wf200.pds). The device may be unstable.
+[    7.112949] wfx-sdio mmc2:0001:1: timeout while wake up chip
+[    7.128974] wfx-sdio mmc2:0001:1: timeout while wake up chip
+[    7.144951] wfx-sdio mmc2:0001:1: timeout while wake up chip
+[    7.164905] wfx-sdio mmc2:0001:1: max wake-up retries reached
+[    7.171020] wfx-sdio mmc2:0001:1: wfx_data_write: bus communication error: -84
+[    8.133000] wfx-sdio mmc2:0001:1: chip is abnormally long to answer
+[   11.237016] wfx-sdio mmc2:0001:1: chip did not answer
+[   11.242318] wfx-sdio mmc2:0001:1: hardware request WRITE_MIB/GL_OPERATIONAL_POWER_MODE (0x06) on vif 2 returned error -110
+[   11.254156] wfx-sdio mmc2:0001:1: MAC address 0: 00:0d:6f:73:93:69
+[   11.254506] wfx-sdio mmc2:0001:1: MAC address 1: 00:0d:6f:73:93:6a
+```
+
+```
+dmesg | grep wfx
+[    6.767220] wfx: loading out-of-tree module taints kernel.
+[    7.042675] wfx-sdio mmc2:0001:1: started firmware 3.17.0 "WF200_ASIC_WFM_(Jenkins)_FW3.17.0" (API: 3.12, keyset: C0, caps: 0x00000002)
+[    7.296633] wfx-sdio mmc2:0001:1: PDS: malformed file (legacy format?)
+[    7.304044] wfx-sdio: probe of mmc2:0001:1 failed with error -22
+```
+
+### WFx200 wakeup 
+
+pi@raspberrypi:~ $ dmesg | grep wfx
+[    6.694119] wfx: loading out-of-tree module taints kernel.
+[    7.011533] wfx-sdio mmc2:0001:1: started firmware 3.17.0 "WF200_ASIC_WFM_(Jenkins)_FW3.17.0" (API: 3.12, keyset: C0, caps: 0x00000002)
+[    7.360657] wfx-sdio mmc2:0001:1: MAC address 0: 00:0d:6f:73:93:69
+[    7.361673] wfx-sdio mmc2:0001:1: MAC address 1: 00:0d:6f:73:93:6a
+[   13.213003] wfx-sdio mmc2:0001:1: timeout while wake up chip
+
+Hint: to avoid the 'timeout while wake up chip', it is possible to comment (in the device tree) the wfx_wakeup segment. most Linux platforms won't really need to use device power save anyway (Saving the additional mW is generally not an issue on Linux platforms as it is on battery-powered IoT products).
