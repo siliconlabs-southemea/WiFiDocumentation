@@ -2,13 +2,13 @@
 sort: 1
 ---
 
-# WFx200
+# Linux
 
 {% include list.liquid all=true %}
 
 ## Documentation ##
 
-
+Collection of guides and docs to use WiFi chipsets on Linux platforms
 
 ## Disclaimer ##
 
