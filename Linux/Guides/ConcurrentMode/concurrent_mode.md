@@ -64,3 +64,18 @@ pi@raspberrypi:~ $ ip a
     inet6 fe80::3932:5c26:3ddb:17c4/64 scope link
        valid_lft forever preferred_lft forever
 ```
+
+## Making it all automatic upon startup 
+
+Silicon Labs provides a few sample scripts to perform such a task nicely. In this case we will simply use rc.local :
+
+Add the following line to `/etc/rc.local` :
+
+```
+sleep 5
+iw dev wlan0 interface add wlan1 type managed
+sleep 2
+```
+
+If you had previously registered a network using `wpa_cli`, your device should connect automatically using `wlan1`.
+

@@ -111,6 +111,13 @@ We will use the following scenario to set up our system :
     * Other clients will have to share the remaining
 * Traffic control will be done at the IP level
 
+***Note : The chipset used in this scenario was the WFx200. Silicon Labs limited the number of concurrent WiFi connections to 14 in their driver sources***
+
+See line of `hif_api_cmd.h`:
+
+``` c
+#define HIF_LINK_ID_MAX            14
+```
 
 ### Automatically define IP and AP settings upon startup
 
@@ -566,7 +573,7 @@ tc qdisc add dev ifb0 parent 1:20 handle 20: sfq perturb 10
 ```
 
 ### Hostapd config file 
-A few other can be improved in such scenario
+A few other can be improved in such scenario is the inactivity from connected stations to free slots for new devices 
 
 ```
 # Station inactivity limit
