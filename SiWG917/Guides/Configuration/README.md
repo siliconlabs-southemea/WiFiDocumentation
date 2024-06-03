@@ -2,16 +2,17 @@
 sort: 1
 ---
 
-# Low power states (aka EM2-4) 
+# GPIO configuration (MUX) 
 
 
 ## Description ##
 
-This document explain SiWG917 architecture and procedure to achieve low power states.
+This document explain SiWG917 architecture regarding its peripherals connection to the GPIOs.
 
 ## Documentation ##
 
 Official documentation can be found at our [Developer Documentation](https://docs.silabs.com/wiseconnect/3.1.0/wiseconnect-developing-with-wiseconnect-sdk/) page.
+The SW reference manual can be found at our [github](https://github.com/SiliconLabs/wiseconnect/blob/master/docs/software-reference/manuals/siwx91x-software-reference-manual.md]
 
 
 ## Disclaimer ##
