@@ -5,16 +5,17 @@ sort: 3
 # Loading and using the WFx Kernel Module
 
 At this point you should have :
- - Downloaded Kernel headers matching your running platform
- - Downloaded Kernel sources matching your running platform
- - Built the WFX kernel module `wfx.ko`
- - Installed the WFK kernel module on the system
+
+- Downloaded Kernel headers matching your running platform
+- Downloaded Kernel sources matching your running platform
+- Built the WFX kernel module `wfx.ko`
+- Installed the WFK kernel module on the system
 
 ## Loading the kernel module
 
 This step is straightforward if all previously happened successfully . Simply used `modprobe wfx` as super user:
 
-``` console 
+``` console
 pi@raspberrypi:~/wfx_driver/linux-stable/drivers/net/wireless/silabs/wfx $ sudo modprobe wfx
 ```
 
@@ -22,14 +23,14 @@ To verify the module is loaded just use lsmod this way : `lsmod | grep wfx`
 
 Output should be :
 
-``` console 
+``` console
 pi@raspberrypi:~/wfx_driver/linux-stable/drivers/net/wireless/silabs/wfx $ lsmod | grep wfx
 wfx                   151552  0
 mac80211              974848  1 wfx
 cfg80211              925696  3 wfx,brcmfmac,mac80211
 ```
 
-## Using the kernel module to enable the WF200 :
+## Using the kernel module to enable the WF200
 
 ### Enabling module load at boot time
 
@@ -37,7 +38,7 @@ This step is distribution dependent. As we are running RaspiOS, we will be using
 
 Edit `/etc/modules-load.d/modules.conf` as super user and add `wfx` at the end of the file as below:
 
-``` console 
+``` console
 pi@raspberrypi:~ $ cat /etc/modules-load.d/modules.conf
 # /etc/modules: kernel modules to load at boot time.
 #
@@ -52,7 +53,7 @@ Once done just reboot : `sudo reboot`
 
 Just check the module is now loaded upon startup by calling `lsmod | grep wfx` :
 
-``` console 
+``` console
 pi@raspberrypi:~ $ lsmod | grep wfx
 wfx                   151552  0
 mac80211              974848  1 wfx
@@ -73,7 +74,7 @@ On a Raspberry Pi we will start by disabling the onboard WiFi chipset. For test 
 
 To do so, append the 2 lines below at the end of `/boot/config.txt`
 
-``` 
+```
 dtoverlay=disable-wifi
 dtoverlay=disable-bt
 ```
@@ -114,7 +115,7 @@ dtoverlay=wfx-sdio,sdio_overclock=25
 
 *Note 3: The Silicon Labs Hat has a hardware limitation preventing it work faster than 25MHz, pass along sdio_overclock=25 to the dtoverlay config*
 
-### Checking sdio on the Raspberry Pi hardware 
+### Checking sdio on the Raspberry Pi hardware
 
 To check that SDIO is up and running, start by pushing device tree contents into a file named `device_tree.out` :
 
@@ -143,14 +144,14 @@ pi@raspberrypi:~ $ grep -A 5 sdio_pins device_tree.out
 
 Finally identify the mmc interface used for sdio by rebooting and issuing `dmesg | grep 'new high speed SDIO'` :
 
-``` console 
+``` console
 pi@raspberrypi:~ $ dmesg | grep 'new high speed SDIO'
 [    3.148442] mmc2: new high speed SDIO card at address 0001
 ```
 
 Check that everything is fine by issuing `cat /sys/kernel/debug/mmc2/ios` :
 
-```console 
+```console
 pi@raspberrypi:~ $ sudo cat /sys/kernel/debug/mmc2/ios
 clock:          50000000 Hz
 actual clock:   25000000 Hz
@@ -164,7 +165,7 @@ signal voltage: 0 (3.30 V)
 driver type:    0 (driver type B)
 ```
 
-### Downloading and setting up WFx200 SEC firmware 
+### Downloading and setting up WFx200 SEC firmware
 
 WFx200 has no firmware and is required to be flashed by the wfx driver upon startup
 
@@ -172,7 +173,7 @@ By default the driver will look in `/lib/firmware/wfx/wfm_wf200.sec`
 
 To download the latest version start by cloning the wfx-firmare repo :
 
-```console 
+```console
 cd ~/wfx_driver
 git clone https://github.com/SiliconLabs/wfx-firmware.git
 cd wfx-firmware
@@ -180,8 +181,8 @@ cd wfx-firmware
 
 Once done copy the .sec file provided in the destination directory as super user:
 
-```console 
-cp wfm_wf200_C0.sec /lib/firmware/wfm_wf200.sec
+```console
+cp wfm_wf200_C0.sec /lib/firmware/wfx/
 ```
 
 ```
@@ -214,7 +215,6 @@ Get the definitions.in that match your firmware version. In our case v3.17:
 
 `wget https://raw.githubusercontent.com/SiliconLabs/wfx-firmware/FW3.17.0/PDS/definitions.in`
 
-
 Modify the PDS file by commenting out 2 lines :
 
 ```
@@ -224,33 +224,43 @@ Modify the PDS file by commenting out 2 lines :
 
 And run the script :
 
-`pds_compress -l PDS/template.pds.in wf200.pds`
+`pds_compress -l BRD8022A_Rev_A06.pds.in wf200.pds`
 
 Once done copy the .pds file provided in the destination directory as super user:
 
-```console 
+```console
 cp wf200.pds /lib/firmware/wfx/wf200.pds
 ```
 
 ### Reboot and start using the WFx200
 
+```
+lab@raspberrypi:~ $ dmesg | grep wfx
+[    6.836028] wfx: loading out-of-tree module taints kernel.
+[    6.978024] wfx-sdio mmc3:0001:1: started firmware 3.17.0 "WF200_ASIC_WFM_(Jenkins)_FW3.17.0" (API: 3.12, keyset: C0, caps: 0x00000002)
+[    7.000346] wfx-sdio mmc3:0001:1: MAC address 0: 00:0d:6f:73:93:69
+[    7.000424] wfx-sdio mmc3:0001:1: MAC address 1: 00:0d:6f:73:93:6a
+```
+
 ## Troubleshoot
 
-### Debugging sdio detection on the Raspberry Pi hardware 
+### Debugging sdio detection on the Raspberry Pi hardware
 
-* Error : `mmc2: error -110 whilst initialising SDIO card`
-This usually is due to clock speed being too high. 
+- Error : `mmc2: error -110 whilst initialising SDIO card`
+This usually is due to clock speed being too high.
 
-Silcion Labs shared hardware limitations related to their eval boards on [this KBA](https://community.silabs.com/s/article/linux-sdio-detection?language=en_US) sction "Max SDIO speed too high": 
+Silcion Labs shared hardware limitations related to their eval boards on [this KBA](https://community.silabs.com/s/article/linux-sdio-detection?language=en_US) sction "Max SDIO speed too high":
 
 *There is a SDIO speed limitation with BRD8022/BRD8023 due to the onboard switches. For this reason, we need to reduce the SDIO clock speed. 25 MHz is generally a good choice, given that choices are limited and vary depending on the platform.*
 
-If enabling traces reflect the -110 error in `dmesg` then reduce clock speed by downclocking the bus in `/boot/config.txt`: 
+If enabling traces reflect the -110 error in `dmesg` then reduce clock speed by downclocking the bus in `/boot/config.txt`:
+
 ```
 dtoverlay=wfx-sdio,sdio_overclock=25
 ```
 
 Another  way to debug Device Tree is to use /boot/config.txt as follows:
+
 ```
 # Enable DRM VC4 V3D driver
 #dtoverlay=vc4-kms-v3d
@@ -272,7 +282,6 @@ dmesg | grep wfx
 [    6.694957] wfx-sdio: probe of mmc2:0001:1 failed with error -2
 ```
 
-
 ```
 dmesg | grep wfx
 [    6.640329] wfx: loading out-of-tree module taints kernel.
@@ -280,7 +289,6 @@ dmesg | grep wfx
 ```
 
 ### Debugging .pds injection into wfx200
-
 
 ```
 pi@raspberrypi:~ $ dmesg | grep wfx
@@ -309,13 +317,15 @@ dmesg | grep wfx
 [    7.304044] wfx-sdio: probe of mmc2:0001:1 failed with error -22
 ```
 
-### WFx200 wakeup 
+### WFx200 wakeup
 
+```
 pi@raspberrypi:~ $ dmesg | grep wfx
 [    6.694119] wfx: loading out-of-tree module taints kernel.
 [    7.011533] wfx-sdio mmc2:0001:1: started firmware 3.17.0 "WF200_ASIC_WFM_(Jenkins)_FW3.17.0" (API: 3.12, keyset: C0, caps: 0x00000002)
 [    7.360657] wfx-sdio mmc2:0001:1: MAC address 0: 00:0d:6f:73:93:69
 [    7.361673] wfx-sdio mmc2:0001:1: MAC address 1: 00:0d:6f:73:93:6a
 [   13.213003] wfx-sdio mmc2:0001:1: timeout while wake up chip
+```
 
 Hint: to avoid the 'timeout while wake up chip', it is possible to comment (in the device tree) the wfx_wakeup segment. most Linux platforms won't really need to use device power save anyway (Saving the additional mW is generally not an issue on Linux platforms as it is on battery-powered IoT products).
